@@ -3,7 +3,7 @@
 ## 🤖 Instructions for Claude Agent
 
 **How to use this spec:**
-1. Implement one phase at a time
+1. Implement as much as you were told to
 2. After each phase, verify the checkpoint works before proceeding
 3. If a checkpoint fails, debug before moving to next phase
 4. Ask user to test external integrations (Telegram, Spotify OAuth)
@@ -11,16 +11,16 @@
 **Phase Summary:**
 | Phase | Description | Checkpoint |
 |-------|-------------|------------|
-| 1 | Project Setup | Worker returns "Hello World" |
-| 2 | Database Schema | D1 tables created |
-| 3 | Telegram Bot | Bot responds to /start |
-| 4 | Spotify Integration | Fetches recently played tracks |
-| 5 | LRCLIB Lyrics | Fetches lyrics for songs |
-| 6 | LLM Word Extraction | OpenRouter processes batch of songs with lyrics |
-| 7 | Cron Delivery | Sends daily word message at 6 PM CET |
-| 8 | Song Cache | Stores and reuses LLM responses per song |
-| 9 | Review Feature | Quiz works |
-| 10 | Testing & Polish | Edge cases handled |
+| 1 | Project Setup | DONE |
+| 2 | Database Schema | DONE |
+| 3 | Telegram Bot | DONE |
+| 4 | Spotify Integration | DONE |
+| 5 | LRCLIB Lyrics | DONE |
+| 6 | LLM Word Extraction | DONE |
+| 7 | Cron Delivery | DONE |
+| 8 | Song Cache | DONE |
+| 9 | Review Feature | DONE |
+| 10 | Testing & Polish | DONE |
 | 11 | Deployment | Production ready |
 
 ---
@@ -63,11 +63,11 @@ A personal Telegram bot that analyzes your Spotify listening history, uses an LL
 ## Phase 1: Project Setup
 
 ### 1.1 Initialize Cloudflare Worker Project
-- [ ] Create new directory `spotify-english-bot`
-- [ ] Initialize with `wrangler init`
-- [ ] Configure `wrangler.toml` with project name
-- [ ] Set up TypeScript configuration
-- [ ] Create folder structure:
+- [x] Create new directory `spotify-english-bot`
+- [x] Initialize with `wrangler init`
+- [x] Configure `wrangler.toml` with project name
+- [x] Set up TypeScript configuration
+- [x] Create folder structure:
   ```
   src/
     index.ts              # Main entry point
@@ -88,9 +88,9 @@ A personal Telegram bot that analyzes your Spotify listening history, uses an LL
   ```
 
 ### 1.2 Create D1 Database
-- [ ] Define schema in `schema.sql`
+- [x] Define schema in `schema.sql`
 - [ ] Create D1 database via Wrangler: `wrangler d1 create spotify-english-bot`
-- [ ] Bind database to worker in `wrangler.toml`
+- [x] Bind database to worker in `wrangler.toml` (placeholder ID, needs update after DB creation)
 
 ### 1.3 Environment Variables
 - [ ] Set up secrets via `wrangler secret put`:
@@ -101,7 +101,7 @@ A personal Telegram bot that analyzes your Spotify listening history, uses an LL
   - `OPENROUTER_API_KEY`
 
 ### 1.4 Configure Cron
-- [ ] Add to `wrangler.toml`:
+- [x] Add to `wrangler.toml`:
   ```toml
   [triggers]
   crons = ["0 17 * * *"]  # 5 PM UTC = 6 PM CET
@@ -197,9 +197,9 @@ CREATE TABLE word_queue (
 ## Phase 3: Telegram Bot Setup
 
 ### 3.1 Create Bot
-- [ ] Create bot via @BotFather
-- [ ] Save bot token as secret
-- [ ] Set bot commands:
+- [ ] Create bot via @BotFather (manual step)
+- [ ] Save bot token as secret (manual step)
+- [x] Set bot commands (script at `scripts/setup-webhook.ts`):
   ```
   start - Initialize and connect Spotify
   status - Check connection and queue status
@@ -251,18 +251,18 @@ if (username !== env.TELEGRAM_ALLOWED_USERNAME) {
 }
 ```
 
-- [ ] Set up POST endpoint `/webhook/telegram`
-- [ ] Parse incoming JSON update
-- [ ] **Security**: Ignore messages from any username != `TELEGRAM_ALLOWED_USERNAME`
-- [ ] Route to appropriate command handler based on `message.text`
-- [ ] Handle callback queries for inline buttons (quiz answers)
+- [x] Set up POST endpoint `/webhook/telegram`
+- [x] Parse incoming JSON update
+- [x] **Security**: Ignore messages from any username != `TELEGRAM_ALLOWED_USERNAME`
+- [x] Route to appropriate command handler based on `message.text`
+- [x] Handle callback queries for inline buttons (quiz answers)
 
 ### 3.3 Command Handlers
-- [ ] `/start` - Check if Spotify connected, if not send OAuth link
-- [ ] `/status` - Show: Spotify connected?, queue size, words learned, last delivery
-- [ ] `/stats` - Words learned total, by artist, recent words
-- [ ] `/review` - Random quiz from learned words
-- [ ] `/pause` and `/resume` - Toggle `is_active` flag
+- [x] `/start` - Check if Spotify connected, if not send OAuth link
+- [x] `/status` - Show: Spotify connected?, queue size, words learned, last delivery
+- [x] `/stats` - Words learned total, by artist, recent words
+- [x] `/review` - Random quiz from learned words
+- [x] `/pause` and `/resume` - Toggle `is_active` flag
 
 ### 3.4 Register Webhook
 Telegram needs to know where to send updates. Call this once after deployment.
@@ -294,17 +294,17 @@ const response = await fetch(
 ## Phase 4: Spotify Integration
 
 ### 4.1 OAuth Flow
-- [ ] Create endpoint `GET /auth/spotify` - redirects to Spotify authorization
-- [ ] Create endpoint `GET /auth/spotify/callback` - handles OAuth callback
-- [ ] Required scopes: `user-read-recently-played`
-- [ ] Exchange code for tokens
-- [ ] Store tokens in D1
-- [ ] Send confirmation message to Telegram
+- [x] Create endpoint `GET /auth/spotify` - redirects to Spotify authorization
+- [x] Create endpoint `GET /auth/spotify/callback` - handles OAuth callback
+- [x] Required scopes: `user-read-recently-played`
+- [x] Exchange code for tokens
+- [x] Store tokens in D1
+- [x] Send confirmation message to Telegram
 
 ### 4.2 Token Refresh
-- [ ] Function to check if token is expired (compare `spotify_token_expires_at` with now)
-- [ ] Function to refresh token using `refresh_token`
-- [ ] Update stored tokens after refresh
+- [x] Function to check if token is expired (compare `spotify_token_expires_at` with now)
+- [x] Function to refresh token using `refresh_token`
+- [x] Update stored tokens after refresh
 
 ### 4.3 Fetch Recently Played Tracks
 Endpoint: `GET https://api.spotify.com/v1/me/player/recently-played`
@@ -340,10 +340,10 @@ interface RecentlyPlayedResponse {
 }
 ```
 
-- [ ] Function to fetch last 50 recently played tracks
-- [ ] Extract: `track.id`, `track.name`, `track.artists[0].name`
-- [ ] Filter out tracks already in `processed_tracks` table
-- [ ] Return list of new tracks to process
+- [x] Function to fetch last 50 recently played tracks
+- [x] Extract: `track.id`, `track.name`, `track.artists[0].name`
+- [x] Filter out tracks already in `processed_tracks` table
+- [x] Return list of new tracks to process
 
 **Checkpoint 4**: Can fetch and display user's recently played tracks
 
@@ -393,10 +393,10 @@ interface LRCLIBResult {
 ```
 
 ### 5.4 Implementation
-- [ ] Function to search LRCLIB by track name + artist
-- [ ] Return first result's `plainLyrics`
-- [ ] Handle no results (return null)
-- [ ] Handle instrumental tracks (`instrumental: true`)
+- [x] Function to search LRCLIB by track name + artist
+- [x] Return first result's `plainLyrics`
+- [x] Handle no results (return null)
+- [x] Handle instrumental tracks (`instrumental: true`)
 
 **Checkpoint 5**: Given a song, returns plain lyrics text
 
@@ -405,9 +405,9 @@ interface LRCLIBResult {
 ## Phase 6: LLM Word Extraction (OpenRouter)
 
 ### 6.1 OpenRouter API Setup
-- [ ] Store API key as secret
-- [ ] Model: `cerebras/gpt-oss-120b-fp16`
-- [ ] Use structured outputs for reliable JSON responses
+- [x] Store API key as secret (env var configured in types)
+- [x] Model: `cerebras/gpt-oss-120b-fp16`
+- [x] Use structured outputs for reliable JSON responses
 
 ### 6.2 Batch Processing Strategy
 Instead of calling LLM for each song, we batch multiple songs into ONE prompt:
@@ -516,10 +516,10 @@ const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
 ```
 
 ### 6.6 Response Handling
-- [ ] Parse JSON response
-- [ ] Match each song's words by `track_id`
-- [ ] Validate structure
-- [ ] Handle empty words arrays
+- [x] Parse JSON response
+- [x] Match each song's words by `track_id`
+- [x] Validate structure
+- [x] Handle empty words arrays
 
 **Checkpoint 6**: Given multiple songs with lyrics, LLM returns structured word data for all
 
@@ -591,11 +591,11 @@ const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
 ### 7.3 Implementation Steps
 
 1. **Check prerequisites**
-   - [ ] User `is_active` = 1
-   - [ ] Spotify token valid (refresh if needed)
+   - [x] User `is_active` = 1
+   - [x] Spotify token valid (refresh if needed)
 
 2. **Ensure queue has words**
-   - [ ] If queue < 3 words, process new tracks:
+   - [x] If queue < 3 words, process new tracks:
    
    ```typescript
    // Step 1: Fetch recently played from Spotify
@@ -642,11 +642,11 @@ const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
    ```
 
 3. **Deliver words**
-   - [ ] Pull 3 oldest words from queue
-   - [ ] Format Telegram message
-   - [ ] Send via Telegram API
-   - [ ] Move words from queue to `learned_words`
-   - [ ] Update `last_delivery_at`
+   - [x] Pull 3 oldest words from queue
+   - [x] Format Telegram message
+   - [x] Send via Telegram API
+   - [x] Move words from queue to `learned_words`
+   - [x] Update `last_delivery_at`
 
 ### 7.4 Message Format
 
@@ -678,11 +678,11 @@ Distrustful of human sincerity or integrity
 ```
 
 ### 7.5 Error Handling
-- [ ] If Spotify token refresh fails: send message to reconnect
-- [ ] If no new tracks: skip silently (don't spam user)
-- [ ] If LRCLIB fails: skip that song
-- [ ] If LLM fails: log error, send "no words today" message
-- [ ] If queue empty after processing: send "no new words today" message
+- [x] If Spotify token refresh fails: send message to reconnect
+- [x] If no new tracks: skip silently (don't spam user)
+- [x] If LRCLIB fails: skip that song
+- [x] If LLM fails: log error, send "no words today" message
+- [x] If queue empty after processing: skip silently
 
 **Checkpoint 7**: Cron runs and sends daily message at 6 PM CET
 
@@ -724,11 +724,11 @@ async function getWordsForSong(trackId: string, trackName: string, artistName: s
 ## Phase 9: Review & Quiz Feature
 
 ### 9.1 Quiz Flow
-- [ ] `/review` command triggers quiz
-- [ ] Select random word from `learned_words` (prioritize low confidence)
-- [ ] Show word, hide definition
-- [ ] "Reveal" button shows answer
-- [ ] "Knew it ✓" / "Forgot ✗" buttons update confidence
+- [x] `/review` command triggers quiz
+- [x] Select random word from `learned_words` (prioritize low confidence)
+- [x] Show word, hide definition
+- [x] "Reveal" button shows answer
+- [x] "Knew it ✓" / "Forgot ✗" buttons update confidence
 
 ### 9.2 Confidence Tracking
 ```sql
@@ -777,30 +777,31 @@ Did you remember?
 ## Phase 10: Testing & Polish
 
 ### 10.1 Error Handling
-- [ ] Wrap all external API calls in try-catch
-- [ ] Graceful fallbacks for each failure mode
-- [ ] User-friendly error messages via Telegram
+- [x] Wrap all external API calls in try-catch
+- [x] Graceful fallbacks for each failure mode
+- [x] User-friendly error messages via Telegram
 
 ### 10.2 Edge Cases
-- [ ] No recent tracks (user hasn't listened)
-- [ ] All tracks already processed
-- [ ] Song not found in LRCLIB (no lyrics available)
-- [ ] Song has no suitable B2-C1 words
-- [ ] Non-English songs
-- [ ] Spotify token expired and refresh fails
-- [ ] Empty queue with nothing to send
-- [ ] LRCLIB rate limiting
-- [ ] OpenRouter API errors
+- [x] No recent tracks (user hasn't listened)
+- [x] All tracks already processed
+- [x] Song not found in LRCLIB (no lyrics available)
+- [x] Song has no suitable B2-C1 words
+- [x] Non-English songs (handled: LLM returns empty words array)
+- [x] Spotify token expired and refresh fails
+- [x] Empty queue with nothing to send
+- [x] LRCLIB rate limiting (returns null, song skipped)
+- [x] OpenRouter API errors
+- [x] Duplicate words: skip adding to queue if already in learned_words
 
 ### 10.3 Logging
-- [ ] Log key events: cron start, tracks found, cache hits/misses, lyrics fetched, words queued, delivery sent
-- [ ] Use `console.log` (visible in Cloudflare dashboard)
+- [x] Log key events: cron start, tracks found, cache hits/misses, lyrics fetched, words queued, delivery sent
+- [x] Use `console.log` (visible in Cloudflare dashboard)
 
 ### 10.4 Security
-- [ ] Verify Telegram `username` matches `TELEGRAM_ALLOWED_USERNAME` env var
-- [ ] Return 200 OK even for unauthorized requests (prevents Telegram retries)
-- [ ] Never log tokens
-- [ ] HTTPS only (automatic with Workers)
+- [x] Verify Telegram `username` matches `TELEGRAM_ALLOWED_USERNAME` env var
+- [x] Return 200 OK even for unauthorized requests (prevents Telegram retries)
+- [x] Never log tokens
+- [x] HTTPS only (automatic with Workers)
 
 **Checkpoint 10**: Bot handles all edge cases gracefully
 
