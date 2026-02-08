@@ -1,0 +1,11 @@
+name = "spotify-english-bot"
+main = "src/index.ts"
+compatibility_date = "2024-12-01"
+
+[triggers]
+crons = ["0 17 * * *"]  # 5 PM UTC = 6 PM CET
+
+[[d1_databases]]
+binding = "DB"
+database_name = "spotify-english-bot"
+database_id = "placeholder-will-be-set-after-creation"
