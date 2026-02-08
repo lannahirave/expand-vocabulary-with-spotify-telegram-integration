@@ -3,8 +3,9 @@ import { getSpotifyAuthUrl, exchangeCodeForTokens } from "../services/spotify";
 import { getUser, updateSpotifyTokens } from "../db/queries";
 import { sendMessage } from "../services/telegram";
 
-export function handleSpotifyAuth(env: Env): Response {
-  const redirectUri = "https://spotify-english-bot.workers.dev/auth/spotify/callback";
+export function handleSpotifyAuth(request: Request, env: Env): Response {
+  const url = new URL(request.url);
+  const redirectUri = `${url.origin}/auth/spotify/callback`;
   const authUrl = getSpotifyAuthUrl(env, redirectUri);
   return Response.redirect(authUrl, 302);
 }

@@ -92,6 +92,13 @@ export async function addWordToQueue(
   songTitle: string,
   artistName: string
 ): Promise<void> {
+  // Skip if already learned
+  const alreadyLearned = await db
+    .prepare("SELECT 1 FROM learned_words WHERE word = ?")
+    .bind(word.word)
+    .first();
+  if (alreadyLearned) return;
+
   await db
     .prepare(
       "INSERT OR IGNORE INTO word_queue (word, definition, part_of_speech, example_lyric, song_title, artist_name, collocations, phonetic) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"

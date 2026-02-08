@@ -8,11 +8,11 @@ export default {
     const url = new URL(request.url);
 
     if (request.method === "POST" && url.pathname === "/webhook/telegram") {
-      return handleTelegramWebhook(request, env);
+      return handleTelegramWebhook(request, env, url.origin);
     }
 
     if (request.method === "GET" && url.pathname === "/auth/spotify") {
-      return handleSpotifyAuth(env);
+      return handleSpotifyAuth(request, env);
     }
 
     if (request.method === "GET" && url.pathname === "/auth/spotify/callback") {

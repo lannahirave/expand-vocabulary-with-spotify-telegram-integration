@@ -12,7 +12,11 @@ import {
   updateWordConfidence,
 } from "../db/queries";
 
-export async function handleTelegramWebhook(request: Request, env: Env): Promise<Response> {
+export async function handleTelegramWebhook(
+  request: Request,
+  env: Env,
+  workerOrigin: string
+): Promise<Response> {
   try {
     const update: TelegramUpdate = await request.json();
 
@@ -41,7 +45,7 @@ export async function handleTelegramWebhook(request: Request, env: Env): Promise
 
     switch (text) {
       case "/start":
-        await handleStart(env, chatId, update.message.from.id.toString());
+        await handleStart(env, chatId, update.message.from.id.toString(), workerOrigin);
         break;
       case "/status":
         await handleStatus(env, chatId);
@@ -59,7 +63,11 @@ export async function handleTelegramWebhook(request: Request, env: Env): Promise
         await handleResume(env, chatId);
         break;
       default:
-        await sendMessage(env, chatId, "Unknown command. Use /start, /status, /stats, /review, /pause, or /resume.");
+        await sendMessage(
+          env,
+          chatId,
+          "Unknown command. Use /start, /status, /stats, /review, /pause, or /resume."
+        );
     }
   } catch (error) {
     console.error("Telegram webhook error:", error);
@@ -68,15 +76,23 @@ export async function handleTelegramWebhook(request: Request, env: Env): Promise
   return new Response("OK", { status: 200 });
 }
 
-async function handleStart(env: Env, chatId: number, telegramId: string): Promise<void> {
+async function handleStart(
+  env: Env,
+  chatId: number,
+  telegramId: string,
+  workerOrigin: string
+): Promise<void> {
   await createUser(env.DB, telegramId);
   const user = await getUser(env.DB);
 
   if (user?.spotify_access_token) {
-    await sendMessage(env, chatId, "Welcome back! Spotify is connected. You'll receive daily vocabulary at 6 PM CET.");
+    await sendMessage(
+      env,
+      chatId,
+      "Welcome back! Spotify is connected. You'll receive daily vocabulary at 6 PM CET."
+    );
   } else {
-    const url = new URL("/auth/spotify", "https://spotify-english-bot.workers.dev");
-    const authUrl = getSpotifyAuthUrl(env, url.origin + "/auth/spotify/callback");
+    const authUrl = getSpotifyAuthUrl(env, `${workerOrigin}/auth/spotify/callback`);
     await sendMessage(
       env,
       chatId,
@@ -172,10 +188,20 @@ async function handleCallbackQuery(env: Env, update: TelegramUpdate): Promise<vo
   } else if (data.startsWith("knew_")) {
     const wordId = parseInt(data.replace("knew_", ""), 10);
     await updateWordConfidence(env.DB, wordId, true);
-    await editMessage(env, chatId, messageId, "Great! Confidence updated. Use /review for another word.");
+    await editMessage(
+      env,
+      chatId,
+      messageId,
+      "Great! Confidence updated. Use /review for another word."
+    );
   } else if (data.startsWith("forgot_")) {
     const wordId = parseInt(data.replace("forgot_", ""), 10);
     await updateWordConfidence(env.DB, wordId, false);
-    await editMessage(env, chatId, messageId, "No worries! Keep reviewing. Use /review for another word.");
+    await editMessage(
+      env,
+      chatId,
+      messageId,
+      "No worries! Keep reviewing. Use /review for another word."
+    );
   }
 }
