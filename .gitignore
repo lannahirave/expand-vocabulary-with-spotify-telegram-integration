@@ -2,3 +2,8 @@ node_modules/
 dist/
 .wrangler/
 .dev.vars
+.env
+
+# Personal Claude Code config
+.claude/settings.local.json
+.claude/plans/

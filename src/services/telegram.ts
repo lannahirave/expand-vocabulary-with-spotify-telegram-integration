@@ -6,6 +6,8 @@ export async function sendMessage(
   text: string,
   replyMarkup?: object
 ): Promise<void> {
+  console.log("[Telegram] Sending message to chat", chatId, "- length:", text.length);
+
   const body: Record<string, unknown> = {
     chat_id: chatId,
     text,
@@ -16,11 +18,18 @@ export async function sendMessage(
     body.reply_markup = replyMarkup;
   }
 
-  await fetch(`https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
+  const response = await fetch(`https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
   });
+
+  const result = await response.json() as { ok: boolean; description?: string };
+  if (!result.ok) {
+    console.error("[Telegram] sendMessage failed:", JSON.stringify(result));
+  } else {
+    console.log("[Telegram] Message sent successfully to chat", chatId);
+  }
 }
 
 export async function editMessage(
@@ -30,6 +39,8 @@ export async function editMessage(
   text: string,
   replyMarkup?: object
 ): Promise<void> {
+  console.log("[Telegram] Editing message", messageId, "in chat", chatId);
+
   const body: Record<string, unknown> = {
     chat_id: chatId,
     message_id: messageId,
@@ -41,11 +52,16 @@ export async function editMessage(
     body.reply_markup = replyMarkup;
   }
 
-  await fetch(`https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/editMessageText`, {
+  const response = await fetch(`https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/editMessageText`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
   });
+
+  const result = await response.json() as { ok: boolean; description?: string };
+  if (!result.ok) {
+    console.error("[Telegram] editMessage failed:", JSON.stringify(result));
+  }
 }
 
 export async function answerCallbackQuery(env: Env, callbackQueryId: string): Promise<void> {

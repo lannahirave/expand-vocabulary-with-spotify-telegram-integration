@@ -82,7 +82,9 @@ export interface ExtractedWord {
   definition: string;
   phonetic: string;
   example_lyric: string;
+  example_sentence: string;
   collocations: string[];
+  synonyms: string[];
 }
 
 export interface SongWordResult {
@@ -103,13 +105,16 @@ export interface SongWithLyrics {
 
 export interface LearnedWord {
   id: number;
+  user_id: number;
   word: string;
   definition: string;
   part_of_speech: string;
   example_lyric: string;
+  example_sentence: string;
   song_title: string;
   artist_name: string;
   collocations: string;
+  synonyms: string;
   phonetic: string;
   learned_at: number;
   review_count: number;
@@ -119,13 +124,16 @@ export interface LearnedWord {
 
 export interface QueuedWord {
   id: number;
+  user_id: number;
   word: string;
   definition: string;
   part_of_speech: string;
   example_lyric: string;
+  example_sentence: string;
   song_title: string;
   artist_name: string;
   collocations: string;
+  synonyms: string;
   phonetic: string;
   queued_at: number;
 }

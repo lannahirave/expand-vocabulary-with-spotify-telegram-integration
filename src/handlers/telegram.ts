@@ -1,8 +1,8 @@
-import { Env, TelegramUpdate } from "../types";
+import { Env, TelegramUpdate, UserRow } from "../types";
 import { sendMessage, editMessage, answerCallbackQuery } from "../services/telegram";
 import { getSpotifyAuthUrl } from "../services/spotify";
 import {
-  getUser,
+  getUserByTelegramId,
   createUser,
   setUserActive,
   getQueueCount,
@@ -11,6 +11,12 @@ import {
   getLearnedWordById,
   updateWordConfidence,
 } from "../db/queries";
+
+function isAllowedUser(username: string | undefined, env: Env): boolean {
+  if (!username) return false;
+  const allowed = env.TELEGRAM_ALLOWED_USERNAME.split(";");
+  return allowed.includes(username);
+}
 
 export async function handleTelegramWebhook(
   request: Request,
@@ -22,11 +28,13 @@ export async function handleTelegramWebhook(
 
     // Handle callback queries (button clicks)
     if (update.callback_query) {
-      const username = update.callback_query.from.username;
-      if (username !== env.TELEGRAM_ALLOWED_USERNAME) {
+      if (!isAllowedUser(update.callback_query.from.username, env)) {
         return new Response("OK", { status: 200 });
       }
-      await handleCallbackQuery(env, update);
+      const telegramId = update.callback_query.from.id.toString();
+      const user = await getUserByTelegramId(env.DB, telegramId);
+      if (!user) return new Response("OK", { status: 200 });
+      await handleCallbackQuery(env, update, user);
       return new Response("OK", { status: 200 });
     }
 
@@ -35,39 +43,48 @@ export async function handleTelegramWebhook(
       return new Response("OK", { status: 200 });
     }
 
-    const username = update.message.from.username;
-    if (username !== env.TELEGRAM_ALLOWED_USERNAME) {
+    if (!isAllowedUser(update.message.from.username, env)) {
       return new Response("OK", { status: 200 });
     }
 
     const chatId = update.message.chat.id;
+    const telegramId = update.message.from.id.toString();
     const text = update.message.text.trim();
 
     switch (text) {
       case "/start":
-        await handleStart(env, chatId, update.message.from.id.toString(), workerOrigin);
+        await handleStart(env, chatId, telegramId, workerOrigin);
         break;
-      case "/status":
-        await handleStatus(env, chatId);
-        break;
-      case "/stats":
-        await handleStats(env, chatId);
-        break;
-      case "/review":
-        await handleReview(env, chatId);
-        break;
-      case "/pause":
-        await handlePause(env, chatId);
-        break;
-      case "/resume":
-        await handleResume(env, chatId);
-        break;
-      default:
-        await sendMessage(
-          env,
-          chatId,
-          "Unknown command. Use /start, /status, /stats, /review, /pause, or /resume."
-        );
+      default: {
+        const user = await getUserByTelegramId(env.DB, telegramId);
+        if (!user) {
+          await sendMessage(env, chatId, "Please use /start first to set up your account.");
+          break;
+        }
+        switch (text) {
+          case "/status":
+            await handleStatus(env, chatId, user);
+            break;
+          case "/stats":
+            await handleStats(env, chatId, user);
+            break;
+          case "/review":
+            await handleReview(env, chatId, user);
+            break;
+          case "/pause":
+            await handlePause(env, chatId, user);
+            break;
+          case "/resume":
+            await handleResume(env, chatId, user);
+            break;
+          default:
+            await sendMessage(
+              env,
+              chatId,
+              "Unknown command. Use /start, /status, /stats, /review, /pause, or /resume."
+            );
+        }
+      }
     }
   } catch (error) {
     console.error("Telegram webhook error:", error);
@@ -82,17 +99,16 @@ async function handleStart(
   telegramId: string,
   workerOrigin: string
 ): Promise<void> {
-  await createUser(env.DB, telegramId);
-  const user = await getUser(env.DB);
+  const user = await createUser(env.DB, telegramId);
 
-  if (user?.spotify_access_token) {
+  if (user.spotify_access_token) {
     await sendMessage(
       env,
       chatId,
       "Welcome back! Spotify is connected. You'll receive daily vocabulary at 6 PM CET."
     );
   } else {
-    const authUrl = getSpotifyAuthUrl(env, `${workerOrigin}/auth/spotify/callback`);
+    const authUrl = getSpotifyAuthUrl(env, `${workerOrigin}/auth/spotify/callback`, telegramId);
     await sendMessage(
       env,
       chatId,
@@ -101,14 +117,13 @@ async function handleStart(
   }
 }
 
-async function handleStatus(env: Env, chatId: number): Promise<void> {
-  const user = await getUser(env.DB);
-  const queueCount = await getQueueCount(env.DB);
-  const learnedCount = await getLearnedWordsCount(env.DB);
+async function handleStatus(env: Env, chatId: number, user: UserRow): Promise<void> {
+  const queueCount = await getQueueCount(env.DB, user.id);
+  const learnedCount = await getLearnedWordsCount(env.DB, user.id);
 
-  const spotifyStatus = user?.spotify_access_token ? "Connected" : "Not connected";
-  const activeStatus = user?.is_active ? "Active" : "Paused";
-  const lastDelivery = user?.last_delivery_at
+  const spotifyStatus = user.spotify_access_token ? "Connected" : "Not connected";
+  const activeStatus = user.is_active ? "Active" : "Paused";
+  const lastDelivery = user.last_delivery_at
     ? new Date(user.last_delivery_at * 1000).toISOString().split("T")[0]
     : "Never";
 
@@ -119,9 +134,9 @@ async function handleStatus(env: Env, chatId: number): Promise<void> {
   );
 }
 
-async function handleStats(env: Env, chatId: number): Promise<void> {
-  const learnedCount = await getLearnedWordsCount(env.DB);
-  const queueCount = await getQueueCount(env.DB);
+async function handleStats(env: Env, chatId: number, user: UserRow): Promise<void> {
+  const learnedCount = await getLearnedWordsCount(env.DB, user.id);
+  const queueCount = await getQueueCount(env.DB, user.id);
 
   await sendMessage(
     env,
@@ -130,8 +145,8 @@ async function handleStats(env: Env, chatId: number): Promise<void> {
   );
 }
 
-async function handleReview(env: Env, chatId: number): Promise<void> {
-  const word = await getRandomLearnedWord(env.DB);
+async function handleReview(env: Env, chatId: number, user: UserRow): Promise<void> {
+  const word = await getRandomLearnedWord(env.DB, user.id);
 
   if (!word) {
     await sendMessage(env, chatId, "No words to review yet! Wait for your first daily delivery.");
@@ -145,17 +160,17 @@ async function handleReview(env: Env, chatId: number): Promise<void> {
   });
 }
 
-async function handlePause(env: Env, chatId: number): Promise<void> {
-  await setUserActive(env.DB, false);
+async function handlePause(env: Env, chatId: number, user: UserRow): Promise<void> {
+  await setUserActive(env.DB, user.id, false);
   await sendMessage(env, chatId, "Daily delivery paused. Use /resume to restart.");
 }
 
-async function handleResume(env: Env, chatId: number): Promise<void> {
-  await setUserActive(env.DB, true);
+async function handleResume(env: Env, chatId: number, user: UserRow): Promise<void> {
+  await setUserActive(env.DB, user.id, true);
   await sendMessage(env, chatId, "Daily delivery resumed! You'll receive words at 6 PM CET.");
 }
 
-async function handleCallbackQuery(env: Env, update: TelegramUpdate): Promise<void> {
+async function handleCallbackQuery(env: Env, update: TelegramUpdate, _user: UserRow): Promise<void> {
   const query = update.callback_query!;
   const chatId = query.message.chat.id;
   const messageId = query.message.message_id;
@@ -173,9 +188,18 @@ async function handleCallbackQuery(env: Env, update: TelegramUpdate): Promise<vo
     }
 
     const collocations = JSON.parse(word.collocations || "[]") as string[];
+    const synonyms = JSON.parse(word.synonyms || "[]") as string[];
     const collocationsText = collocations.map((c) => `  ${c}`).join("\n");
 
-    const text = `*${word.word}* ${word.phonetic} (${word.part_of_speech})\n${word.definition}\n\n_"${word.example_lyric}"_\n  -- "${word.song_title}" by ${word.artist_name}\n\nCollocations:\n${collocationsText}\n\nDid you remember?`;
+    let text = `*${word.word}* ${word.phonetic} (${word.part_of_speech})\n${word.definition}\n\n`;
+    text += `_"${word.example_lyric}"_\n  -- "${word.song_title}" by ${word.artist_name}\n\n`;
+    if (word.example_sentence) {
+      text += `Example: _${word.example_sentence}_\n\n`;
+    }
+    if (synonyms.length > 0) {
+      text += `Synonyms: ${synonyms.join(", ")}\n`;
+    }
+    text += `Collocations:\n${collocationsText}\n\nDid you remember?`;
 
     await editMessage(env, chatId, messageId, text, {
       inline_keyboard: [

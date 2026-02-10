@@ -19,6 +19,11 @@ export default {
       return handleSpotifyCallback(request, env);
     }
 
+    if (request.method === "GET" && url.pathname === "/cron/trigger") {
+      await handleCron(env);
+      return new Response("Cron triggered");
+    }
+
     return new Response("Spotify English Bot is running!");
   },
 

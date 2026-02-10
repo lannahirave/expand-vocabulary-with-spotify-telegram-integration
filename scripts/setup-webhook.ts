@@ -1,11 +1,14 @@
 // Run with: npx tsx scripts/setup-webhook.ts
-// Requires TELEGRAM_BOT_TOKEN and WORKER_URL environment variables
+// Reads from .dev.vars or environment variables
 
-const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+import { loadEnv } from "./load-env";
+loadEnv();
+
+const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || process.env.tgbot;
 const WORKER_URL = process.env.WORKER_URL;
 
 if (!TELEGRAM_BOT_TOKEN || !WORKER_URL) {
-  console.error("Set TELEGRAM_BOT_TOKEN and WORKER_URL environment variables");
+  console.error("Missing TELEGRAM_BOT_TOKEN (or tgbot) and WORKER_URL in .dev.vars");
   process.exit(1);
 }
 
