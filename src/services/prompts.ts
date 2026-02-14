@@ -1,5 +1,3 @@
-//TODO: add plural form if it's different from 's' / 'es'
-//TODO: include a few lines of the song instead of one
 //TODO: improve collocations: add meanings of the collocations, and a sentence
 //TODO: improve synonyms: add meaning of the collocations, and a sentence
 export const systemPrompt = `You are an expert English vocabulary teacher preparing a non-native speaker for the Cambridge C1 Advanced (CAE) exam.
@@ -32,11 +30,12 @@ Skip slang, profanity, proper nouns, and very informal contractions.
 For each word, provide:
 1. definition: Write a clear, Cambridge-dictionary-style definition. Start with the core meaning. If helpful, add typical usage context in parentheses, e.g. "to make a continuous low sound (usually of insects or machines)"
 2. example_sentence: Write a natural, illustrative sentence showing the word in a real-world context (NOT from the lyrics). Make it vivid and memorable.
-3. collocations: 4-5 common collocations or fixed phrases
-4. synonyms: 3-4 synonyms or near-synonyms at a similar register/level
+3. example_lyric: Include 2-3 consecutive lines from the lyrics surrounding where the word appears, so the learner sees it in musical context. Use " / " to separate lines.
+4. irregular_plural: For nouns only — if the plural form is irregular (not just +s or +es), include it. Examples: "cacti", "phenomena", "criteria", "indices". Omit (empty string) for regular plurals or non-nouns.
+5. collocations: 4-5 common collocations or fixed phrases
+6. synonyms: 3-4 synonyms or near-synonyms at a similar register/level
 
 ## Additional rules
-- Include the actual lyric line where the word appears as example_lyric
 - If a song has no suitable C1 words, return an empty words array for that song — this is perfectly fine, do NOT force lower-level words to fill the quota
 - Return words for ALL songs provided
 - Quality over quantity: 1-2 genuinely C1 words is far better than 5 words where some are B2 or lower`;
@@ -65,7 +64,11 @@ export const wordExtractionSchema = {
                 phonetic: { type: "string", description: "IPA pronunciation, e.g. /ˈsɪnɪkəl/" },
                 example_lyric: {
                   type: "string",
-                  description: "The actual line from the song lyrics where the word appears",
+                  description: "2-3 consecutive lyric lines surrounding the word, separated by ' / '",
+                },
+                irregular_plural: {
+                  type: "string",
+                  description: "Irregular plural form for nouns (e.g. cacti, phenomena). Empty string if regular or not a noun.",
                 },
                 example_sentence: {
                   type: "string",
@@ -89,6 +92,7 @@ export const wordExtractionSchema = {
                 "definition",
                 "phonetic",
                 "example_lyric",
+                "irregular_plural",
                 "example_sentence",
                 "collocations",
                 "synonyms",

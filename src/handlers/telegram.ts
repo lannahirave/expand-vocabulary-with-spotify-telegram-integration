@@ -207,7 +207,10 @@ async function handleCallbackQuery(env: Env, update: TelegramUpdate, _user: User
     const synonyms = JSON.parse(word.synonyms || "[]") as string[];
     const collocationsText = collocations.map((c) => `  ${c}`).join("\n");
 
-    let text = `*${word.word}* ${word.phonetic} (${word.part_of_speech})\n${word.definition}\n\n`;
+    const pos = word.irregular_plural
+      ? `${word.part_of_speech}, pl. ${word.irregular_plural}`
+      : word.part_of_speech;
+    let text = `*${word.word}* ${word.phonetic} (${pos})\n${word.definition}\n\n`;
     text += `_"${word.example_lyric}"_\n  -- "${word.song_title}" by ${word.artist_name}\n\n`;
     if (word.example_sentence) {
       text += `Example: _${word.example_sentence}_\n\n`;

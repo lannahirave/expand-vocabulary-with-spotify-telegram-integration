@@ -81,7 +81,10 @@ export async function deliverWordsToUser(env: Env, user: UserRow): Promise<void>
       const synonyms = JSON.parse(word.synonyms || "[]") as string[];
       const collocationsText = collocations.map((c) => `  ${c}`).join("\n");
 
-      message += `*${word.word}* ${word.phonetic} (${word.part_of_speech})\n`;
+      const pos = word.irregular_plural
+        ? `${word.part_of_speech}, pl. ${word.irregular_plural}`
+        : word.part_of_speech;
+      message += `*${word.word}* ${word.phonetic} (${pos})\n`;
       message += `${word.definition}\n\n`;
       message += `_"${word.example_lyric}"_\n`;
       message += `  -- "${word.song_title}" by ${word.artist_name}\n\n`;

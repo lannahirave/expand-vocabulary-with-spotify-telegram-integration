@@ -117,7 +117,7 @@ export async function addWordToQueue(
 
   await db
     .prepare(
-      "INSERT OR IGNORE INTO word_queue (user_id, word, definition, part_of_speech, example_lyric, example_sentence, song_title, artist_name, collocations, synonyms, phonetic) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+      "INSERT OR IGNORE INTO word_queue (user_id, word, definition, part_of_speech, example_lyric, irregular_plural, example_sentence, song_title, artist_name, collocations, synonyms, phonetic) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
     )
     .bind(
       userId,
@@ -125,6 +125,7 @@ export async function addWordToQueue(
       word.definition,
       word.part_of_speech,
       word.example_lyric,
+      word.irregular_plural || null,
       word.example_sentence || null,
       songTitle,
       artistName,
@@ -160,7 +161,7 @@ export async function removeFromQueue(db: D1Database, ids: number[]): Promise<vo
 export async function moveWordToLearned(db: D1Database, userId: number, word: QueuedWord): Promise<void> {
   await db
     .prepare(
-      "INSERT OR IGNORE INTO learned_words (user_id, word, definition, part_of_speech, example_lyric, example_sentence, song_title, artist_name, collocations, synonyms, phonetic) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+      "INSERT OR IGNORE INTO learned_words (user_id, word, definition, part_of_speech, example_lyric, irregular_plural, example_sentence, song_title, artist_name, collocations, synonyms, phonetic) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
     )
     .bind(
       userId,
@@ -168,6 +169,7 @@ export async function moveWordToLearned(db: D1Database, userId: number, word: Qu
       word.definition,
       word.part_of_speech,
       word.example_lyric,
+      word.irregular_plural || null,
       word.example_sentence,
       word.song_title,
       word.artist_name,

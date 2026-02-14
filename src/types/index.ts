@@ -82,6 +82,7 @@ export interface ExtractedWord {
   definition: string;
   phonetic: string;
   example_lyric: string;
+  irregular_plural: string;
   example_sentence: string;
   collocations: string[];
   synonyms: string[];
@@ -110,6 +111,7 @@ export interface LearnedWord {
   definition: string;
   part_of_speech: string;
   example_lyric: string;
+  irregular_plural: string | null;
   example_sentence: string;
   song_title: string;
   artist_name: string;
@@ -129,6 +131,7 @@ export interface QueuedWord {
   definition: string;
   part_of_speech: string;
   example_lyric: string;
+  irregular_plural: string | null;
   example_sentence: string;
   song_title: string;
   artist_name: string;
