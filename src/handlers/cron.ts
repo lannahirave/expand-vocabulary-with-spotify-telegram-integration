@@ -1,4 +1,4 @@
-import { Env, UserRow, SongWithLyrics, ExtractedWord } from "../types";
+import { Env, UserRow, SongWithLyrics, ExtractedWord, QueuedWord } from "../types";
 import {
   getAllActiveUsers,
   getQueueCount,
@@ -11,7 +11,6 @@ import {
   getCachedSong,
   saveSongCache,
   addWordToQueue,
-  getLearnedWordsCount,
 } from "../db/queries";
 import { getValidAccessToken, fetchRecentlyPlayed } from "../services/spotify";
 import { fetchLyrics } from "../services/lrclib";
@@ -70,38 +69,12 @@ export async function deliverWordsToUser(env: Env, user: UserRow): Promise<void>
     console.log("[Cron] User", user.id, "- pulled", words.length, "words:", words.map((w) => w.word).join(", "));
     if (words.length === 0) return;
 
-    // Format message
-    const learnedCount = await getLearnedWordsCount(env.DB, user.id);
-    const remainingQueue = queueCount - words.length;
-
-    let message = "Words from your music:\n\n";
-
+    // Send each word as a separate message
     for (const word of words) {
-      const collocations = JSON.parse(word.collocations || "[]") as string[];
-      const synonyms = JSON.parse(word.synonyms || "[]") as string[];
-      const collocationsText = collocations.map((c) => `  ${c}`).join("\n");
-
-      const pos = word.irregular_plural
-        ? `${word.part_of_speech}, pl. ${word.irregular_plural}`
-        : word.part_of_speech;
-      message += `*${word.word}* ${word.phonetic} (${pos})\n`;
-      message += `${word.definition}\n\n`;
-      message += `_"${word.example_lyric}"_\n`;
-      message += `  -- "${word.song_title}" by ${word.artist_name}\n\n`;
-      if (word.example_sentence) {
-        message += `Example: _${word.example_sentence}_\n\n`;
-      }
-      if (synonyms.length > 0) {
-        message += `Synonyms: ${synonyms.join(", ")}\n`;
-      }
-      message += `Collocations:\n${collocationsText}\n\n`;
-      message += `---\n\n`;
+      const message = formatWordMessage(word);
+      console.log("[Cron] User", user.id, "- sending word:", word.word);
+      await sendMessage(env, chatId, message);
     }
-
-    message += `Learned: ${learnedCount + words.length} | Queue: ${remainingQueue}`;
-
-    console.log("[Cron] User", user.id, "- sending delivery message, length:", message.length);
-    await sendMessage(env, chatId, message);
 
     // Move words to learned and clean up queue
     for (const word of words) {
@@ -118,6 +91,30 @@ export async function deliverWordsToUser(env: Env, user: UserRow): Promise<void>
     console.error("[Cron] User", user.id, "- error:", error instanceof Error ? error.message : error);
     await sendMessage(env, chatId, "Something went wrong with the delivery. Please try again later.");
   }
+}
+
+export function formatWordMessage(word: QueuedWord | { word: string; phonetic: string; part_of_speech: string; irregular_plural: string | null; definition: string; example_lyric: string; song_title: string; artist_name: string; example_sentence: string; collocations: string; synonyms: string }): string {
+  const collocations = JSON.parse(word.collocations || "[]") as string[];
+  const synonyms = JSON.parse(word.synonyms || "[]") as string[];
+
+  const pos = word.irregular_plural
+    ? `${word.part_of_speech}, pl. ${word.irregular_plural}`
+    : word.part_of_speech;
+
+  let msg = `📖 *${word.word}* ${word.phonetic} (${pos})\n`;
+  msg += `${word.definition}\n\n`;
+  msg += `🎵 _"${word.example_lyric}"_\n`;
+  msg += `    — "${word.song_title}" by ${word.artist_name}\n\n`;
+  if (word.example_sentence) {
+    msg += `💡 _${word.example_sentence}_\n\n`;
+  }
+  if (collocations.length > 0) {
+    msg += `🔗 ${collocations.join(" · ")}\n\n`;
+  }
+  if (synonyms.length > 0) {
+    msg += `🔄 ${synonyms.join(", ")}`;
+  }
+  return msg;
 }
 
 async function replenishQueue(env: Env, user: UserRow): Promise<void> {

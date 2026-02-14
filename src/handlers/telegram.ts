@@ -1,7 +1,7 @@
 import { Env, TelegramUpdate, UserRow } from "../types";
 import { sendMessage, editMessage, answerCallbackQuery } from "../services/telegram";
 import { getSpotifyAuthUrl } from "../services/spotify";
-import { deliverWordsToUser } from "./cron";
+import { deliverWordsToUser, formatWordMessage } from "./cron";
 import {
   getUserByTelegramId,
   createUser,
@@ -203,22 +203,7 @@ async function handleCallbackQuery(env: Env, update: TelegramUpdate, _user: User
       return;
     }
 
-    const collocations = JSON.parse(word.collocations || "[]") as string[];
-    const synonyms = JSON.parse(word.synonyms || "[]") as string[];
-    const collocationsText = collocations.map((c) => `  ${c}`).join("\n");
-
-    const pos = word.irregular_plural
-      ? `${word.part_of_speech}, pl. ${word.irregular_plural}`
-      : word.part_of_speech;
-    let text = `*${word.word}* ${word.phonetic} (${pos})\n${word.definition}\n\n`;
-    text += `_"${word.example_lyric}"_\n  -- "${word.song_title}" by ${word.artist_name}\n\n`;
-    if (word.example_sentence) {
-      text += `Example: _${word.example_sentence}_\n\n`;
-    }
-    if (synonyms.length > 0) {
-      text += `Synonyms: ${synonyms.join(", ")}\n`;
-    }
-    text += `Collocations:\n${collocationsText}\n\nDid you remember?`;
+    const text = formatWordMessage(word) + "\n\nDid you remember?";
 
     await editMessage(env, chatId, messageId, text, {
       inline_keyboard: [
