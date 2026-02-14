@@ -10,6 +10,7 @@ Webhook-based bot. Webhook URL set via `scripts/setup-webhook.ts`. All handler l
 | /status   | handleStatus    | Shows Spotify connection, queue size, learned count |
 | /stats    | handleStats     | Shows learning statistics            |
 | /review   | handleReview    | Flashcard quiz on a learned word     |
+| /nextwords| handleNextWords | Delivers next 3 words on demand      |
 | /pause    | handlePause     | Stops daily word delivery            |
 | /resume   | handleResume    | Restarts daily word delivery         |
 

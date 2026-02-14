@@ -1,6 +1,7 @@
 import { Env, TelegramUpdate, UserRow } from "../types";
 import { sendMessage, editMessage, answerCallbackQuery } from "../services/telegram";
 import { getSpotifyAuthUrl } from "../services/spotify";
+import { deliverWordsToUser } from "./cron";
 import {
   getUserByTelegramId,
   createUser,
@@ -77,11 +78,14 @@ export async function handleTelegramWebhook(
           case "/resume":
             await handleResume(env, chatId, user);
             break;
+          case "/nextwords":
+            await handleNextWords(env, chatId, user);
+            break;
           default:
             await sendMessage(
               env,
               chatId,
-              "Unknown command. Use /start, /status, /stats, /review, /pause, or /resume."
+              "Unknown command. Use /start, /status, /stats, /review, /nextwords, /pause, or /resume."
             );
         }
       }
@@ -168,6 +172,18 @@ async function handlePause(env: Env, chatId: number, user: UserRow): Promise<voi
 async function handleResume(env: Env, chatId: number, user: UserRow): Promise<void> {
   await setUserActive(env.DB, user.id, true);
   await sendMessage(env, chatId, "Daily delivery resumed! You'll receive words at 6 PM CET.");
+}
+
+async function handleNextWords(env: Env, chatId: number, user: UserRow): Promise<void> {
+  if (!user.spotify_access_token) {
+    await sendMessage(
+      env,
+      chatId,
+      "Spotify is not connected. Please use /start to connect your Spotify account first."
+    );
+    return;
+  }
+  await deliverWordsToUser(env, user);
 }
 
 async function handleCallbackQuery(env: Env, update: TelegramUpdate, _user: UserRow): Promise<void> {

@@ -1,6 +1,6 @@
 # Daily Word Delivery Pipeline
 
-Triggered by cron (`0 17 * * *` = 5 PM UTC / 6 PM CET) or manually via `GET /cron/trigger`. Code in `src/handlers/cron.ts`.
+Triggered by cron (`0 17 * * *` = 5 PM UTC / 6 PM CET), manually via `GET /cron/trigger`, or on demand via the `/nextwords` Telegram command. Core delivery logic is in `deliverWordsToUser()` in `src/handlers/cron.ts`.
 
 ## Flow
 

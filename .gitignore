@@ -3,6 +3,7 @@ dist/
 .wrangler/
 .dev.vars
 .env
+.tmp-build/
 
 # Personal Claude Code config
 .claude/settings.local.json

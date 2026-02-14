@@ -31,7 +31,7 @@ export async function handleCron(env: Env): Promise<void> {
 
   for (const user of users) {
     try {
-      await processUserCron(env, user);
+      await deliverWordsToUser(env, user);
     } catch (error) {
       console.error(
         `[Cron] Error processing user ${user.id} (telegram_id=${user.telegram_id}):`,
@@ -43,7 +43,7 @@ export async function handleCron(env: Env): Promise<void> {
   console.log("[Cron] === Job completed ===");
 }
 
-async function processUserCron(env: Env, user: UserRow): Promise<void> {
+export async function deliverWordsToUser(env: Env, user: UserRow): Promise<void> {
   console.log("[Cron] Processing user", user.id, "telegram_id =", user.telegram_id);
 
   const chatId = parseInt(user.telegram_id, 10);
@@ -113,7 +113,7 @@ async function processUserCron(env: Env, user: UserRow): Promise<void> {
     console.log("[Cron] User", user.id, "- delivered", words.length, "words successfully");
   } catch (error) {
     console.error("[Cron] User", user.id, "- error:", error instanceof Error ? error.message : error);
-    await sendMessage(env, chatId, "Something went wrong with today's delivery. I'll try again tomorrow.");
+    await sendMessage(env, chatId, "Something went wrong with the delivery. Please try again later.");
   }
 }
 

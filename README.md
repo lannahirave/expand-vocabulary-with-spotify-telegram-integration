@@ -51,6 +51,7 @@ Learned: 47 | Queue: 12
 | `/status` | Check connection and queue status |
 | `/stats` | View learning statistics |
 | `/review` | Flashcard quiz on learned words |
+| `/nextwords` | Get next batch of words immediately |
 | `/pause` | Pause daily delivery |
 | `/resume` | Resume daily delivery |
 
